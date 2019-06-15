@@ -117,7 +117,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
     }
 
     fun showShortMsg(msg: String) {
-        _message.value = msg
+        _message.postValue(msg)
     }
 
     fun registerUSB() {

@@ -1,6 +1,7 @@
 package net.chris.usbcamera
 
 import android.os.Bundle
+import android.os.Handler
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Observer
@@ -13,9 +14,13 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MainViewModel
 
+    private lateinit var handler: Handler
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        handler = Handler()
 
         fab.setOnClickListener {
             showShortMsg("TODO: setting", "Action", null)
@@ -48,9 +53,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showShortMsg(msg: String) =
-        Snackbar.make(fab, msg, Snackbar.LENGTH_SHORT).show()
+        handler.post { Snackbar.make(fab, msg, Snackbar.LENGTH_SHORT).show() }
+
 
     private fun showShortMsg(msg: String, action: String, listener: View.OnClickListener?) =
-        Snackbar.make(fab, msg, Snackbar.LENGTH_SHORT).setAction(action, listener).show()
+        handler.post { Snackbar.make(fab, msg, Snackbar.LENGTH_SHORT).setAction(action, listener).show() }
 
 }
