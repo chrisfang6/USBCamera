@@ -4,6 +4,7 @@ import android.media.*
 import android.media.AudioFormat.*
 import android.media.AudioRecord.STATE_INITIALIZED
 import android.media.MediaRecorder.AudioSource
+import android.media.audiofx.AutomaticGainControl
 import android.os.Build
 import timber.log.Timber
 
@@ -121,6 +122,11 @@ class MicPlayer {
                             when (recorder.state) {
                                 STATE_INITIALIZED -> {
                                     Timber.d("INITIALIZED ${recorder.state}")
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                        if (AutomaticGainControl.isAvailable()) {
+                                            AutomaticGainControl.create(recorder.audioSessionId).enabled = true
+                                        }
+                                    }
                                     return AudioRecordInfo(recorder, bufferSize)
                                 }
                                 else ->
