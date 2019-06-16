@@ -49,13 +49,13 @@ class MicPlayer {
 //            FREQUENCY,
 //            CHANNEL_CONFIGURATION_IN,
 //            AUDIO_ENCODING
-//        ) * 2
+//        ) * FACTOR
 
         val plyBufSize = AudioTrack.getMinBufferSize(
             FREQUENCY,
             CHANNEL_CONFIGURATION_OUT,
             AUDIO_ENCODING
-        ) * 2
+        ) * FACTOR
 
         val (record, recBufSize) = findAudioRecord()
         audioRecord = record
@@ -106,12 +106,12 @@ class MicPlayer {
             for (audioFormat in intArrayOf(AUDIO_ENCODING, ENCODING_PCM_8BIT)) {
                 for (channelConfig in intArrayOf(CHANNEL_CONFIGURATION_IN, CHANNEL_IN_STEREO)) {
                     try {
-                        val bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat) * 2
+                        val bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat) * FACTOR
                         Timber.d("Attempting ${rate}Hz: bits:$audioFormat channel:$channelConfig")
                         if (bufferSize != AudioRecord.ERROR_BAD_VALUE) {
                             // check if we can instantiate and have a success
                             val recorder = AudioRecord(
-                                AudioSource.MIC,
+                                AudioSource.VOICE_COMMUNICATION,
                                 rate,
                                 channelConfig,
                                 audioFormat,
@@ -141,6 +141,7 @@ class MicPlayer {
         const val CHANNEL_CONFIGURATION_IN = CHANNEL_IN_MONO
         const val CHANNEL_CONFIGURATION_OUT = CHANNEL_OUT_MONO
         const val AUDIO_ENCODING = ENCODING_PCM_16BIT
+        const val FACTOR = 2
     }
 
     data class AudioRecordInfo(val audioRecord: AudioRecord?, val bufferSize: Int)
