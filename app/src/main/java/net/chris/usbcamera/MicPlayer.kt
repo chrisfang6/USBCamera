@@ -32,13 +32,15 @@ class MicPlayer {
 
     private fun play() {
         val recBufSize = init()
-        isPlaying = true
-        val recBuf = ByteArray(recBufSize)
-        audioRecord?.startRecording()
-        audioTrack?.play()
-        while (isPlaying) {
-            val readLen = audioRecord?.read(recBuf, 0, recBufSize) ?: 0
-            audioTrack?.write(recBuf, 0, readLen)
+        if (audioRecord != null && audioTrack != null) {
+            isPlaying = true
+            val recBuf = ByteArray(recBufSize)
+            audioRecord?.startRecording()
+            audioTrack?.play()
+            while (isPlaying) {
+                val readLen = audioRecord?.read(recBuf, 0, recBufSize) ?: 0
+                audioTrack?.write(recBuf, 0, readLen)
+            }
         }
     }
 
@@ -55,13 +57,14 @@ class MicPlayer {
             AUDIO_ENCODING
         ) * 2
 
-        audioRecord = AudioRecord(
+        audioRecord = findAudioRecord()
+        /*AudioRecord(
             AudioSource.MIC,
             FREQUENCY,
             CHANNEL_CONFIGURATION_IN,
             AUDIO_ENCODING,
             recBufSize
-        )
+        )*/
 
         audioTrack =
             if (Build.VERSION.SDK_INT > Build.VERSION_CODES.M)
@@ -98,9 +101,8 @@ class MicPlayer {
     }
 
     fun findAudioRecord(): AudioRecord? {
-        var record: AudioRecord? = null
-        for (rate in intArrayOf(48000, 44100, 22050, 11025, 16000, 8000)) {
-            for (audioFormat in intArrayOf(ENCODING_PCM_8BIT, ENCODING_PCM_16BIT)) {
+        for (rate in intArrayOf(44100, 22050, 11025, 16000, 8000)) {
+            for (audioFormat in intArrayOf(ENCODING_PCM_16BIT, ENCODING_PCM_8BIT)) {
                 for (channelConfig in intArrayOf(CHANNEL_IN_MONO, CHANNEL_IN_STEREO)) {
                     try {
                         val bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat)
@@ -118,7 +120,7 @@ class MicPlayer {
                             when (recorder.state) {
                                 STATE_INITIALIZED -> {
                                     Timber.d("INITIALIZED ${recorder.state}")
-                                    record = recorder
+                                    return recorder
                                 }
                                 else ->
                                     Timber.w("STATE_UNINITIALIZED ${recorder.state}")
@@ -130,10 +132,7 @@ class MicPlayer {
                 }
             }
         }
-        record?.apply {
-            release()
-        } ?: Timber.e(" No recorder found!")
-        return record
+        return null
     }
 
     companion object {
