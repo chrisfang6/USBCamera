@@ -143,11 +143,11 @@ class MicPlayer {
     }
 
     companion object {
-        const val FREQUENCY = 44100
+        const val FREQUENCY = 8000 //44100
         const val CHANNEL_CONFIGURATION_IN = CHANNEL_IN_MONO
         const val CHANNEL_CONFIGURATION_OUT = CHANNEL_OUT_MONO
         const val AUDIO_ENCODING = ENCODING_PCM_16BIT
-        const val FACTOR = 2
+        const val FACTOR = 4
     }
 
     data class AudioRecordInfo(val audioRecord: AudioRecord?, val bufferSize: Int)
