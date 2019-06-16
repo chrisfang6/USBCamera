@@ -45,11 +45,11 @@ class MicPlayer {
     }
 
     private fun init(): Int {
-        val recBufSize = AudioRecord.getMinBufferSize(
-            FREQUENCY,
-            CHANNEL_CONFIGURATION_IN,
-            AUDIO_ENCODING
-        ) * 2
+//        val recBufSize = AudioRecord.getMinBufferSize(
+//            FREQUENCY,
+//            CHANNEL_CONFIGURATION_IN,
+//            AUDIO_ENCODING
+//        ) * 2
 
         val plyBufSize = AudioTrack.getMinBufferSize(
             FREQUENCY,
@@ -57,7 +57,8 @@ class MicPlayer {
             AUDIO_ENCODING
         ) * 2
 
-        audioRecord = findAudioRecord()
+        val (record, recBufSize) = findAudioRecord()
+        audioRecord = record
         /*AudioRecord(
             AudioSource.MIC,
             FREQUENCY,
@@ -100,12 +101,12 @@ class MicPlayer {
         return recBufSize
     }
 
-    fun findAudioRecord(): AudioRecord? {
-        for (rate in intArrayOf(44100, 22050, 11025, 16000, 8000)) {
-            for (audioFormat in intArrayOf(ENCODING_PCM_16BIT, ENCODING_PCM_8BIT)) {
-                for (channelConfig in intArrayOf(CHANNEL_IN_MONO, CHANNEL_IN_STEREO)) {
+    private fun findAudioRecord(): AudioRecordInfo {
+        for (rate in intArrayOf(FREQUENCY, 22050, 11025, 16000, 8000)) {
+            for (audioFormat in intArrayOf(AUDIO_ENCODING, ENCODING_PCM_8BIT)) {
+                for (channelConfig in intArrayOf(CHANNEL_CONFIGURATION_IN, CHANNEL_IN_STEREO)) {
                     try {
-                        val bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat)
+                        val bufferSize = AudioRecord.getMinBufferSize(rate, channelConfig, audioFormat) * 2
                         Timber.d("Attempting ${rate}Hz: bits:$audioFormat channel:$channelConfig")
                         if (bufferSize != AudioRecord.ERROR_BAD_VALUE) {
                             // check if we can instantiate and have a success
@@ -120,7 +121,7 @@ class MicPlayer {
                             when (recorder.state) {
                                 STATE_INITIALIZED -> {
                                     Timber.d("INITIALIZED ${recorder.state}")
-                                    return recorder
+                                    return AudioRecordInfo(recorder, bufferSize)
                                 }
                                 else ->
                                     Timber.w("STATE_UNINITIALIZED ${recorder.state}")
@@ -132,7 +133,7 @@ class MicPlayer {
                 }
             }
         }
-        return null
+        return AudioRecordInfo(null, 0)
     }
 
     companion object {
@@ -141,4 +142,6 @@ class MicPlayer {
         const val CHANNEL_CONFIGURATION_OUT = CHANNEL_OUT_MONO
         const val AUDIO_ENCODING = ENCODING_PCM_16BIT
     }
+
+    data class AudioRecordInfo(val audioRecord: AudioRecord?, val bufferSize: Int)
 }
