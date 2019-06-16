@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.content_main.*
+import timber.log.Timber
 
 class MainActivity : AppCompatActivity() {
 
@@ -56,8 +57,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showShortMsg(msg: String) =
-        handler.post { Snackbar.make(fab, msg, Snackbar.LENGTH_SHORT).show() }
-
+        msg.apply {
+            Timber.w(this)
+            handler.post { Snackbar.make(fab, this, Snackbar.LENGTH_SHORT).show() }
+        }
 
     private fun showShortMsg(msg: String, action: String, listener: View.OnClickListener?) =
         handler.post { Snackbar.make(fab, msg, Snackbar.LENGTH_SHORT).setAction(action, listener).show() }

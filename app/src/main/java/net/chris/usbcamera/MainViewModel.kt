@@ -139,7 +139,9 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
     fun startAudioPlay() {
 //        micPlayer.start()
-        micPlayer.findAudioRecord()
+        Thread(Runnable {
+            micPlayer.findAudioRecord()
+        })
     }
 
     fun stopAudioPlay() {
