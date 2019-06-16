@@ -1,9 +1,13 @@
 package net.chris.usbcamera
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 import com.google.android.material.snackbar.Snackbar
@@ -41,7 +45,18 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         viewModel.registerUSB()
-        viewModel.startAudioPlay()
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.RECORD_AUDIO),
+                100
+            )
+        } else {
+            viewModel.startAudioPlay()
+        }
     }
 
     override fun onStop() {
@@ -54,6 +69,21 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         viewModel.release()
         viewModel.releaseAudioPlay()
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            100 -> {
+                // If request is cancelled, the result arrays are empty.
+                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    viewModel.startAudioPlay()
+                } else {
+                    Timber.w("permission denied by user")
+                }
+                return
+            }
+        }
     }
 
     private fun showShortMsg(msg: String) =
