@@ -4,6 +4,7 @@ import android.media.*
 import android.media.AudioFormat.*
 import android.media.AudioRecord.STATE_INITIALIZED
 import android.media.MediaRecorder.AudioSource
+import android.media.audiofx.AcousticEchoCanceler
 import android.media.audiofx.AutomaticGainControl
 import android.os.Build
 import timber.log.Timber
@@ -14,10 +15,12 @@ class MicPlayer {
     private var audioTrack: AudioTrack? = null
     private var audioRecord: AudioRecord? = null
     private var isPlaying = false
+    private var cancel: AcousticEchoCanceler? = null
 
     fun release() {
         audioTrack?.release()
         audioRecord?.release()
+        cancel?.release()
     }
 
     fun stop() {
@@ -122,7 +125,10 @@ class MicPlayer {
                             when (recorder.state) {
                                 STATE_INITIALIZED -> {
                                     Timber.d("INITIALIZED ${recorder.state}")
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                                    cancel = AcousticEchoCanceler.create(recorder.audioSessionId)
+                                    if (AcousticEchoCanceler.isAvailable()) {
+                                        cancel?.enabled = true
+                                    } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                                         if (AutomaticGainControl.isAvailable()) {
                                             AutomaticGainControl.create(recorder.audioSessionId).enabled = true
                                         }
