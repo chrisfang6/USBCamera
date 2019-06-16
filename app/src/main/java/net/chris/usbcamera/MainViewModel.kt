@@ -15,6 +15,8 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
     private lateinit var cameraView: CameraViewInterface
 
+    val micPlayer: MicPlayer = MicPlayer()
+
     private val _message = MutableLiveData<String>()
     val message: LiveData<String> = _message
 
@@ -28,12 +30,12 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
         override fun onAttachDev(device: UsbDevice) {
             if (cameraHelper.usbDeviceCount == 0) {
-                showShortMsg("check no usb camera")
+                showMessage("check no usb camera")
                 return
             }
             // request open permission
             if (!isRequest) {
-                showShortMsg("attaching device")
+                showMessage("attaching device")
                 isRequest = true
                 cameraHelper.requestPermission(0)
             }
@@ -42,20 +44,20 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
         override fun onDettachDev(device: UsbDevice) {
             // close camera
             if (isRequest) {
-                showShortMsg("detaching device")
+                showMessage("detaching device")
                 isRequest = false
                 cameraHelper.closeCamera()
-                showShortMsg(device.deviceName + " is out")
+                showMessage(device.deviceName + " is out")
             }
         }
 
         override fun onConnectDev(device: UsbDevice, isConnected: Boolean) {
             if (!isConnected) {
-                showShortMsg("fail to connect,please check resolution params")
+                showMessage("fail to connect,please check resolution params")
                 isPreview = false
             } else {
                 isPreview = true
-                showShortMsg("connecting")
+                showMessage("connecting")
                 // initialize seekbar
                 // need to wait UVCCamera initialize over
                 Thread(Runnable {
@@ -76,12 +78,12 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
         }
 
         override fun onDisConnectDev(device: UsbDevice) {
-            showShortMsg("disconnecting")
+            showMessage("disconnecting")
         }
     }
 
     init {
-        cameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV)
+//        cameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_YUYV)
         cameraHelper.setOnPreviewFrameListener {
             // onPreviewResult
             TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
@@ -90,19 +92,19 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
     override fun onSurfaceCreated(view: CameraViewInterface?, surface: Surface?) {
         if (!isPreview && cameraHelper.isCameraOpened) {
-            showShortMsg("start preview")
+            showMessage("start preview")
             cameraHelper.startPreview(cameraView)
             isPreview = true
         }
     }
 
     override fun onSurfaceChanged(view: CameraViewInterface?, surface: Surface?, width: Int, height: Int) {
-        showShortMsg("surface changed")
+        showMessage("surface changed")
     }
 
     override fun onSurfaceDestroy(view: CameraViewInterface?, surface: Surface?) {
         if (isPreview && cameraHelper.isCameraOpened) {
-            showShortMsg("stop preview")
+            showMessage("stop preview")
             cameraHelper.stopPreview()
             isPreview = false
         }
@@ -116,22 +118,35 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
         this.cameraView = cameraView
     }
 
-    fun showShortMsg(msg: String) {
+    fun showMessage(msg: String) {
         _message.postValue(msg)
     }
 
     fun registerUSB() {
-        showShortMsg("register usb")
+        showMessage("register usb")
         cameraHelper.registerUSB()
     }
 
     fun unregisterUSB() {
-        showShortMsg("unregister usb")
+        showMessage("unregister usb")
         cameraHelper.unregisterUSB()
     }
 
     fun release() {
-        showShortMsg("release")
+        showMessage("release")
         cameraHelper.release()
+    }
+
+    fun startAudioPlay() {
+//        micPlayer.start()
+        micPlayer.findAudioRecord()
+    }
+
+    fun stopAudioPlay() {
+//        micPlayer.stop()
+    }
+
+    fun releaseAudioPlay() {
+//        micPlayer.release()
     }
 }

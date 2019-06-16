@@ -40,16 +40,19 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         viewModel.registerUSB()
+        viewModel.startAudioPlay()
     }
 
     override fun onStop() {
         super.onStop()
         viewModel.unregisterUSB()
+        viewModel.stopAudioPlay()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         viewModel.release()
+        viewModel.releaseAudioPlay()
     }
 
     private fun showShortMsg(msg: String) =

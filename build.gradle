@@ -40,4 +40,6 @@ ext {
     appCompatVersion = '1.0.2'
 
     commonLibVersion= '1.5.20'
+
+    timber_version = '4.7.1'
 }
