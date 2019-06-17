@@ -180,7 +180,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
     }
 
     fun startAudioPlay() {
-        micPlayer.start()
+//        micPlayer.start()
     }
 
     fun stopAudioPlay() {
