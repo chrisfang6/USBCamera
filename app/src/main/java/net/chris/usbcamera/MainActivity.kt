@@ -1,10 +1,14 @@
 package net.chris.usbcamera
 
 import android.Manifest
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -21,29 +25,45 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var handler: Handler
 
+    private val homeReceiver = HomeReceiver()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestWindowFeature(Window.FEATURE_NO_TITLE)
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        )
         setContentView(R.layout.activity_main)
+
+        Thread.setDefaultUncaughtExceptionHandler(USBUncaughtExceptionHandler(this))
 
         handler = Handler()
 
-        fab.setOnClickListener {
-            showShortMsg("TODO: setting", "Action", null)
+        fab.apply {
+            setOnClickListener {
+                showShortMsg("TODO: setting", "Action", null)
+            }
+            hide()
         }
 
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java).apply {
             initUSBMonitor(this@MainActivity, camera_view)
+            listenToGPIO()
             message.observe(this@MainActivity, Observer { showShortMsg(it) })
+            cameraSwitcher.observe(this@MainActivity, Observer {
+                when (it) {
+                    true -> viewModel.startPreview()
+                    false -> viewModel.stopPreview()
+                }
+            })
         }
 
         camera_view.apply {
             setCallback(viewModel)
 //            postDelayed({ showShortMsg("test") }, 2000)
         }
-    }
 
-    override fun onStart() {
-        super.onStart()
         viewModel.registerUSB()
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -57,15 +77,15 @@ class MainActivity : AppCompatActivity() {
         } else {
             viewModel.startAudioPlay()
         }
-    }
 
-    override fun onStop() {
-        super.onStop()
-        viewModel.unregisterUSB()
-        viewModel.stopAudioPlay()
+        registerReceiver(homeReceiver, IntentFilter(Intent.ACTION_CLOSE_SYSTEM_DIALOGS))
     }
 
     override fun onDestroy() {
+        viewModel.stopListenToGPIO()
+        viewModel.unregisterUSB()
+        viewModel.stopAudioPlay()
+        unregisterReceiver(homeReceiver)
         super.onDestroy()
         viewModel.release()
         viewModel.releaseAudioPlay()
@@ -84,6 +104,9 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
+    }
+
+    override fun onBackPressed() {
     }
 
     private fun showShortMsg(msg: String) =
