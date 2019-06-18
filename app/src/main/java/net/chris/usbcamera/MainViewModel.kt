@@ -10,6 +10,10 @@ import androidx.lifecycle.ViewModel
 import com.jiangdg.usbcamera.UVCCameraHelper
 import com.serenegiant.usb.widget.CameraViewInterface
 import timber.log.Timber
+import java.io.BufferedReader
+import java.io.FileReader
+import java.io.IOException
+
 
 class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
@@ -125,7 +129,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
         Thread(Runnable {
             var count = 0
             while (isReadingGPIO) {
-                gpioData[count] = ShellKit.adb("cat sys/class/gpio_sw/PD18/data")
+                gpioData[count] = readFile("sys/class/gpio_sw/PD18/data")
                 // check if all the gpio data are same
                 var allSame = false
                 var last: String? = null
@@ -157,6 +161,25 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
                 count = (count + 1) % sizeOfGpioData
             }
         }).start()
+    }
+
+    private fun readFile(sys_path: String): String {
+        var prop = ""// 默认值
+        var reader: BufferedReader? = null
+        try {
+            reader = BufferedReader(FileReader(sys_path))
+            prop = reader.readLine()
+        } catch (e: IOException) {
+            Timber.e(e, " ***ERROR*** Here is what I know: " + e.message)
+        } finally {
+            try {
+                reader?.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+        Timber.w("readFile cmd from" + sys_path + "data" + " -> prop = " + prop)
+        return prop
     }
 
     fun stopListenToGPIO() {
