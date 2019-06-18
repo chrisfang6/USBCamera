@@ -7,9 +7,6 @@ import android.view.Surface
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.google.android.things.pio.Gpio
-import com.google.android.things.pio.GpioCallback
-import com.google.android.things.pio.PeripheralManager
 import com.jiangdg.usbcamera.UVCCameraHelper
 import com.serenegiant.usb.widget.CameraViewInterface
 import timber.log.Timber
@@ -19,9 +16,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
     private lateinit var cameraView: CameraViewInterface
 
-    private var gpio: Gpio? = null
-
-    val micPlayer: MicPlayer = MicPlayer()
+    private val micPlayer: MicPlayer = MicPlayer()
 
     private val _message = MutableLiveData<String>()
     val message: LiveData<String> = _message
@@ -33,6 +28,13 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
 
     private var isRequest: Boolean = false
     private var isPreview: Boolean = false
+
+    private var isReadingGPIO: Boolean = false
+
+    private val sizeOfGpioData = 5
+    private val gpioData: Array<String?> = arrayOfNulls(sizeOfGpioData)
+
+    private var isSurfaceAvailable = false
 
     private val listener = object : UVCCameraHelper.OnMyDevConnectListener {
 
@@ -99,7 +101,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
     }
 
     override fun onSurfaceCreated(view: CameraViewInterface?, surface: Surface?) {
-        startPreview()
+        isSurfaceAvailable = true
     }
 
     override fun onSurfaceChanged(view: CameraViewInterface?, surface: Surface?, width: Int, height: Int) {
@@ -107,7 +109,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
     }
 
     override fun onSurfaceDestroy(view: CameraViewInterface?, surface: Surface?) {
-        stopPreview()
+        isSurfaceAvailable = false
     }
 
     fun initUSBMonitor(
@@ -119,45 +121,46 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
     }
 
     fun listenToGPIO() {
-        gpio = try {
-            PeripheralManager.getInstance().openGpio(GPIO_NAME)
-        } catch (e: Exception) {
-            Timber.e(e, "Unable to access GPIO")
-            null
-        }?.apply {
-            // Initialize the pin as an input
-            setDirection(Gpio.DIRECTION_IN)
-            // High voltage is considered active
-            setActiveType(Gpio.ACTIVE_HIGH)
-
-            // Register for all state changes
-            setEdgeTriggerType(Gpio.EDGE_BOTH)
-            registerGpioCallback(object : GpioCallback {
-                override fun onGpioEdge(g: Gpio): Boolean {
-                    // Read the active high pin state
-                    if (g.value) {
-                        startPreview()
-                    } else {
-                        stopPreview()
+        isReadingGPIO = true
+        Thread(Runnable {
+            var count = 0
+            while (isReadingGPIO) {
+                gpioData[count] = ShellKit.adb("cat sys/class/gpio_sw/PD18/data")
+                // check if all the gpio data are same
+                var allSame = false
+                var last: String? = null
+                for (i in gpioData.indices) {
+                    when (i) {
+                        0 -> {
+                            last = gpioData[i]
+                            allSame = true
+                        }
+                        else -> {
+                            allSame = allSame and (last != null) and (gpioData[i] == last)
+                        }
                     }
-                    // Continue listening for more interrupts
-                    return true
                 }
-
-                override fun onGpioError(g: Gpio, error: Int) {
-                    Timber.w("$g: Error event $error")
+                if (allSame && isSurfaceAvailable) {
+                    // change preview state
+                    val state = if (gpioData[0] == "0") "Off" else "On"
+                    Timber.w("GPIO has changed to $state")
+                    when (gpioData[0]) {
+                        "0" -> _cameraSwitcher.postValue(false)
+                        "1" -> _cameraSwitcher.postValue(true)
+                    }
                 }
-            })
-        }
+                try {
+                    Thread.sleep(10)
+                } catch (e: Exception) {
+                    Timber.e(e)
+                }
+                count = (count + 1) % sizeOfGpioData
+            }
+        }).start()
     }
 
     fun stopListenToGPIO() {
-        try {
-            gpio?.close()
-            gpio = null
-        } catch (e: Exception) {
-            Timber.e(e, "Unable to close GPIO")
-        }
+        isReadingGPIO = false
     }
 
     fun showMessage(msg: String) {
