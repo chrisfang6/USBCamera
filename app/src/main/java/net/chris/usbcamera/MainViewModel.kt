@@ -136,7 +136,7 @@ class MainViewModel : ViewModel(), CameraViewInterface.Callback {
                             allSame = true
                         }
                         else -> {
-                            allSame = allSame and (last != null) and (gpioData[i] == last)
+                            allSame = allSame and !last.isNullOrEmpty() and (gpioData[i] == last)
                         }
                     }
                 }
